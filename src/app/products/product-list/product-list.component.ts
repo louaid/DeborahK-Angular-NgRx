@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { Store } from '@ngrx/store';
+import { Observable } from 'rxjs';
 
-import { getCurrentProduct, getShowProductCode, State } from 'src/app/products/state/product.reducer';
+import { getCurrentProduct, getError, getProducts, getShowProductCode, State } from 'src/app/products/state/product.reducer';
 
 import { Product } from '../product';
 import { ProductService } from '../product.service';
@@ -15,14 +16,14 @@ import * as ProductActions from './../state/product.actions';
 })
 export class ProductListComponent implements OnInit {
   pageTitle = 'Products';
-  errorMessage: string;
+  errorMessage$: Observable<string>;
 
-  displayCode: boolean;
+  displayCode$: Observable<boolean>;
 
-  products: Product[];
+  products$: Observable<Product[]>;
 
   // Used to highlight the selected product in the list
-  selectedProduct: Product | null;
+  selectedProduct$: Observable<Product | null>;
 
   constructor(
     private productService: ProductService,
@@ -31,18 +32,15 @@ export class ProductListComponent implements OnInit {
 
   ngOnInit(): void {
     // TODO: Unsubscribe
-    this.store.select(getCurrentProduct).subscribe(
-      currentProduct => this.selectedProduct = currentProduct
-    );
+    this.selectedProduct$ = this.store.select(getCurrentProduct);
 
-    this.productService.getProducts().subscribe({
-      next: (products: Product[]) => this.products = products,
-      error: err => this.errorMessage = err
-    });
+    this.store.dispatch(ProductActions.loadProducts());
 
-    this.store.select(getShowProductCode).subscribe(showProductCode => {
-      this.displayCode = showProductCode;
-    });
+    this.errorMessage$ = this.store.select(getError);
+
+    this.products$ = this.store.select(getProducts);
+
+    this.displayCode$ = this.store.select(getShowProductCode);
   }
 
   checkChanged(): void {
@@ -54,8 +52,8 @@ export class ProductListComponent implements OnInit {
   }
 
   productSelected(product: Product): void {
-    this.store.dispatch(ProductActions.setCurrentProduct({
-      product
+    this.store.dispatch(ProductActions.setCurrentProductId({
+      currentProductId: product.id
     }));
   }
 
